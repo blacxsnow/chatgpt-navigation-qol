@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT Navigation QoL",
+  "version": "1.0.0",
+  "description": "Jump between messages in a ChatGPT conversation with Ctrl+Up and Ctrl+Down. Shift stays free for text selection.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{52aa2883-95b3-4e8a-8eb6-17b891b9cec7}",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "ChatGPT Navigation QoL",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage"
+  ]
+}

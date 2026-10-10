@@ -1,0 +1,186 @@
+:root {
+  color-scheme: light dark;
+  font: menu;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 268px;
+  background: Canvas;
+  color: CanvasText;
+}
+
+.nav-popup {
+  padding: 14px;
+}
+
+/* Header */
+.nav-popup__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.nav-popup__logo {
+  border-radius: 7px;
+  flex: 0 0 auto;
+}
+
+.nav-popup__titles {
+  min-width: 0;
+}
+
+.nav-popup__title {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.nav-popup__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* Rows */
+.nav-popup__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.nav-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nav-row__name {
+  font-size: 13px;
+}
+
+.nav-row__hint {
+  font-size: 12px;
+  opacity: 0.68;
+}
+
+/* Switch */
+.nav-switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.nav-switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.nav-switch__track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, CanvasText 26%, transparent);
+  transition: background 0.15s ease;
+}
+
+.nav-switch__track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: Canvas;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.nav-switch__input:checked + .nav-switch__track {
+  background: #3b5bff;
+}
+
+.nav-switch__input:checked + .nav-switch__track::after {
+  transform: translateX(18px);
+}
+
+.nav-switch__input:focus-visible + .nav-switch__track {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
+/* Select */
+.nav-select {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, CanvasText 6%, transparent);
+}
+
+.nav-select:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
+/* Shortcut footer */
+.nav-help {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  font-size: 11px;
+  border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+}
+
+.nav-help__keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+
+.nav-help__join {
+  opacity: 0.55;
+}
+
+.nav-help__text {
+  margin-left: auto;
+  opacity: 0.68;
+  white-space: nowrap;
+}
+
+.nav-help kbd {
+  font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+}

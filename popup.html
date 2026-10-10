@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT Navigation QoL</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="nav-popup">
+    <header class="nav-popup__head">
+      <img class="nav-popup__logo" src="icons/icon-48.png" alt="" width="28" height="28">
+      <div class="nav-popup__titles">
+        <h1 class="nav-popup__title">Navigation QoL</h1>
+        <p class="nav-popup__subtitle">ChatGPT</p>
+      </div>
+    </header>
+
+    <div class="nav-popup__rows">
+      <label class="nav-row" for="enabled">
+        <span class="nav-row__text">
+          <span class="nav-row__name">Extension</span>
+          <span class="nav-row__hint" id="statusText">Enabled</span>
+        </span>
+        <span class="nav-switch">
+          <input class="nav-switch__input" id="enabled" type="checkbox" role="switch" checked>
+          <span class="nav-switch__track" aria-hidden="true"></span>
+        </span>
+      </label>
+
+      <label class="nav-row" for="mode">
+        <span class="nav-row__text">
+          <span class="nav-row__name">Jump between</span>
+          <span class="nav-row__hint">What Ctrl+&uarr;/&darr; visits</span>
+        </span>
+        <select class="nav-select" id="mode">
+          <option value="all">All messages</option>
+          <option value="prompts">My prompts only</option>
+        </select>
+      </label>
+    </div>
+
+    <section class="nav-help" aria-label="Keyboard shortcut">
+      <span class="nav-help__keys">
+        <kbd>Ctrl</kbd><span class="nav-help__join">+</span><kbd>&uarr;</kbd>
+        <span class="nav-help__join">/</span>
+        <kbd>&darr;</kbd>
+      </span>
+      <span class="nav-help__text">previous / next message</span>
+    </section>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

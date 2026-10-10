@@ -1,0 +1,34 @@
+# --- Packaged / generated extensions ---
+*.xpi
+*.zip
+*.crx
+signed/
+web-ext-artifacts/
+amo-upload-uuid
+
+# --- Node tooling (used only for dev lint/test; not needed to run the add-on) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# --- Editor / IDE state ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Credentials / secrets / local-only config ---
+.env
+.env.*
+*.pem
+*.key
+*.p12
+web-ext-config.js
