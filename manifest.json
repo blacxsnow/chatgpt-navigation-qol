@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChatGPT Navigation QoL",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Jump between messages in a ChatGPT conversation with Ctrl+Up and Ctrl+Down. Shift stays free for text selection.",
   "browser_specific_settings": {
     "gecko": {

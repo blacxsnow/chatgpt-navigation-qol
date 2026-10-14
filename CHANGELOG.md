@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.1]
+
+### Changed
+- `Ctrl + ↑` / `Ctrl + ↓` now scrolls to the **beginning** of the message
+  instead of centering it.
+- More reliable stepping: repeated presses advance one message at a time and no
+  longer lose the current position while the scroll is still animating. The
+  position resets when you scroll the conversation manually.
+
 ## [1.0.0]
 
 ### Added

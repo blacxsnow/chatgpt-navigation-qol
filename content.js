@@ -7,7 +7,7 @@
 // network access.
 //
 // Selectors verified against the live ChatGPT DOM (2026):
-//   - Each message:        [data-chatgpt-search-unit-key]  ("fallback-turn-N:M:user|assistant")
+//   - Each message:          [data-chatgpt-search-unit-key]  ("fallback-turn-N:M:user|assistant")
 //   - Conversation scroller: [data-app-action-timeline-scroll]
 // Older attributes are kept as fallbacks in case the UI changes back.
 
@@ -33,12 +33,24 @@ const HIGHLIGHT_CLASS = "cgmn-nav-highlight";
 const HIGHLIGHT_STYLE_ID = "cgmn-nav-highlight-style";
 const READY_ATTR = "data-cgmn-ready";
 
+const TOP_GAP = 12;            // gap kept between the viewport top and the message
+const SCROLL_SETTLE_MS = 700;  // ignore our own scroll events for this long
+const HIGHLIGHT_MS = 1400;     // how long the blue outline stays visible
+
 let extensionEnabled = false;
 let userOnlyMode = false;
 let navigationListenersAttached = false;
 let highlightedMessage = null;
 let highlightTimer = 0;
+let highlightReapplyTimers = [];
 let missingMessagesWarned = false;
+
+// Explicit navigation cursor. It keeps repeated key presses moving one message
+// at a time even while a smooth scroll is still animating; it is reset whenever
+// the conversation changes or the user scrolls manually.
+let navIndex = -1;
+let navKey = "";
+let suppressScrollResetUntil = 0;
 
 function isElementVisible(el) {
   return Boolean(el) && (el.getClientRects().length > 0 || el.offsetParent !== null);
@@ -126,11 +138,41 @@ function ensureHighlightStyle() {
   (document.head || document.documentElement).appendChild(style);
 }
 
-function clearNavigationHighlight() {
+// A stable identity for a message, used to re-find it if ChatGPT re-renders
+// the node while the highlight is showing.
+function messageKey(el) {
+  return el.getAttribute?.("data-chatgpt-search-unit-key") ||
+    el.getAttribute?.("id") || el.id || null;
+}
+
+function findMessageByKey(key) {
+  if (!key) return null;
+  const escaped = (window.CSS && CSS.escape) ? CSS.escape(key) : key.replace(/["\\]/g, "\\$&");
+  for (const selector of [
+    `[data-chatgpt-search-unit-key="${escaped}"]`,
+    `[id="${escaped}"]`
+  ]) {
+    try {
+      const el = document.querySelector(selector);
+      if (el) return el;
+    } catch {
+      // Ignore an invalid selector and try the next one.
+    }
+  }
+  return null;
+}
+
+function clearHighlightTimers() {
   if (highlightTimer) {
     clearTimeout(highlightTimer);
     highlightTimer = 0;
   }
+  highlightReapplyTimers.forEach(clearTimeout);
+  highlightReapplyTimers = [];
+}
+
+function clearNavigationHighlight() {
+  clearHighlightTimers();
   if (highlightedMessage) {
     highlightedMessage.classList.remove(HIGHLIGHT_CLASS);
     highlightedMessage = null;
@@ -140,35 +182,63 @@ function clearNavigationHighlight() {
 function highlightTurn(el) {
   ensureHighlightStyle();
   clearNavigationHighlight();
-  el.classList.add(HIGHLIGHT_CLASS);
-  highlightedMessage = el;
-  highlightTimer = setTimeout(() => {
-    el.classList.remove(HIGHLIGHT_CLASS);
-    if (highlightedMessage === el) highlightedMessage = null;
-    highlightTimer = 0;
-  }, 1200);
+
+  const key = messageKey(el);
+  const apply = (node) => {
+    if (!node) return;
+    node.classList.add(HIGHLIGHT_CLASS);
+    highlightedMessage = node;
+  };
+
+  apply(el);
+
+  // If ChatGPT swaps the message node out mid-highlight, re-apply by key.
+  highlightReapplyTimers = [250, 600].map((delay) => setTimeout(() => {
+    if (highlightedMessage && highlightedMessage.isConnected) return;
+    apply(findMessageByKey(key));
+  }, delay));
+
+  highlightTimer = setTimeout(clearNavigationHighlight, HIGHLIGHT_MS);
 }
 
-// Index of the message currently closest to the middle of the scroll viewport.
-// Using the centre means that after we centre a message, re-running this returns
-// that same message, so repeated presses move one step at a time.
-function currentTurnIndex(turns, container) {
-  const rect = container.getBoundingClientRect();
-  const viewportCenter = rect.top + rect.height / 2;
-  let bestIndex = 0;
-  let bestDistance = Infinity;
+function conversationKey(userOnly) {
+  return location.pathname + location.search + "|" + (userOnly ? "user" : "all");
+}
 
-  for (let i = 0; i < turns.length; i += 1) {
-    const turnRect = turns[i].getBoundingClientRect();
-    const turnCenter = turnRect.top + turnRect.height / 2;
-    const distance = Math.abs(turnCenter - viewportCenter);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestIndex = i;
+// Index of the message at the top (or, for upward moves, the bottom) of the
+// visible part of the scroller.
+function visibleIndex(turns, container, fromBottom) {
+  const rect = container.getBoundingClientRect();
+  const visibleTop = Math.max(rect.top, 0) + 2;
+  const visibleBottom = Math.min(rect.bottom, window.innerHeight) - 2;
+
+  if (fromBottom) {
+    let index = 0;
+    for (let i = 0; i < turns.length; i += 1) {
+      if (turns[i].getBoundingClientRect().top < visibleBottom) index = i;
     }
+    return index;
   }
 
-  return bestIndex;
+  for (let i = 0; i < turns.length; i += 1) {
+    if (turns[i].getBoundingClientRect().bottom > visibleTop) return i;
+  }
+  return turns.length - 1;
+}
+
+// Scroll so the top of the message sits near the top of the visible area
+// ("beginning of the message"), instead of centering it.
+function scrollMessageToStart(target, container) {
+  const containerTop = Math.max(container.getBoundingClientRect().top, 0);
+  const delta = target.getBoundingClientRect().top - containerTop - TOP_GAP;
+
+  if (typeof container.scrollBy === "function") {
+    container.scrollBy({ top: delta, behavior: "smooth" });
+  } else {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  suppressScrollResetUntil = Date.now() + SCROLL_SETTLE_MS;
 }
 
 function navigateTurns(direction, userOnly) {
@@ -176,20 +246,27 @@ function navigateTurns(direction, userOnly) {
   if (!turns.length) return false;
 
   const container = scrollContainerFor(turns[0]);
-  const index = currentTurnIndex(turns, container);
-  const nextIndex = Math.max(0, Math.min(turns.length - 1, index + direction));
+  const key = conversationKey(userOnly);
 
-  if (nextIndex === index) {
-    // Already at the first/last message: still flash the highlight so the user
-    // gets feedback that the boundary was reached.
-    highlightTurn(turns[nextIndex]);
-    return true;
+  if (navKey !== key || navIndex < 0 || navIndex >= turns.length) {
+    navKey = key;
+    navIndex = visibleIndex(turns, container, direction < 0);
   }
 
+  const nextIndex = Math.max(0, Math.min(turns.length - 1, navIndex + direction));
+  navIndex = nextIndex;
+
   const target = turns[nextIndex];
-  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  scrollMessageToStart(target, container);
   highlightTurn(target);
   return true;
+}
+
+// A manual scroll invalidates the stored cursor, so the next key press starts
+// again from whatever the user is actually looking at.
+function handleScrollReset() {
+  if (Date.now() < suppressScrollResetUntil) return;
+  navIndex = -1;
 }
 
 function swallowEvent(event) {
@@ -229,6 +306,7 @@ function setListeners(enabled) {
 
   if (enabled && !navigationListenersAttached) {
     window.addEventListener("keydown", handleKeydown, true);
+    document.addEventListener("scroll", handleScrollReset, true);
     navigationListenersAttached = true;
     if (document.documentElement) document.documentElement.setAttribute(READY_ATTR, "1");
     return;
@@ -236,7 +314,9 @@ function setListeners(enabled) {
 
   if (!enabled && navigationListenersAttached) {
     window.removeEventListener("keydown", handleKeydown, true);
+    document.removeEventListener("scroll", handleScrollReset, true);
     navigationListenersAttached = false;
+    navIndex = -1;
     clearNavigationHighlight();
   }
 }
@@ -267,7 +347,10 @@ async function initializeExtensionState() {
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local") return;
   if (changes.enabled) setListeners(changes.enabled.newValue !== false);
-  if (changes.mode) userOnlyMode = changes.mode.newValue === "prompts";
+  if (changes.mode) {
+    userOnlyMode = changes.mode.newValue === "prompts";
+    navIndex = -1;
+  }
 });
 
 initializeExtensionState();
